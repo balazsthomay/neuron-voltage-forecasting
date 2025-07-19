@@ -1,11 +1,16 @@
 project_plan.md
+
 .github/chatmodes
 .github
+
 1-intro-to-brian-neurons.ipynb
 2-intro-to-brian-synapses.ipynb
 3-intro-to-brian-simulations.ipynb
+
 .ipynb_checkpoints
 
 data/output/*
 !data/output/run_0_spikes.dat
 !data/output/run_0_voltages.dat
+
+.DS_Store
