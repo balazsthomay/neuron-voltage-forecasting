@@ -6,7 +6,7 @@ import os
 
 # Set simulation parameters
 sim_time = 10 * second  # Simulation duration set to 10 seconds
-run_ids = range(50)     # Number of experimental runs
+run_ids = range(3)     # Number of experimental runs
 output_dir = 'output'   # Define subfolder name for saving files
 os.makedirs(output_dir, exist_ok=True)  # Create output subfolder if it doesn't exist
 

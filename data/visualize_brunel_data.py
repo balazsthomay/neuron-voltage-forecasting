@@ -15,6 +15,7 @@ voltage_data = np.loadtxt(f'{output_dir}/run_{run_id}_voltages.dat')
 # Extract spike times and neuron indices
 spike_times = spike_data[:, 0]  # Time in ms
 spike_neurons = spike_data[:, 1]  # Neuron indices
+print(f"Spike data shape: {spike_data.shape}, Voltage data shape: {voltage_data.shape}")
 
 # Extract voltage data
 times = voltage_data[:, 0]  # Time in ms
@@ -31,15 +32,16 @@ firing_rate = spike_counts / (bin_size / 1000) / 100  # Spikes/s/neuron
 bin_centers = (bins[:-1] + bins[1:]) / 2
 
 # Create figure with three subplots
-fig = plt.figure(figsize=(10, 8))
-gs = fig.add_gridspec(nrows=3, hspace=0.4, height_ratios=[2, 2, 1])
+fig = plt.figure(figsize=(12, 8))
+gs = fig.add_gridspec(nrows=3, hspace=0.5, height_ratios=[2, 2, 1])
 
-# Raster plot
+# Raster plot with transparency and data range check
 ax_raster = fig.add_subplot(gs[0])
-ax_raster.scatter(spike_times, spike_neurons, s=2, color='black')
+ax_raster.scatter(spike_times, spike_neurons, s=2, color='black', alpha=0.1)  # Added alpha for visibility
 ax_raster.set_ylabel('Neuron Index')
 ax_raster.set_title(f'Run {run_id} - Raster Plot')
 ax_raster.set_xlim(0, 10000)  # 10 seconds in ms
+ax_raster.set_ylim(-1, 100)  # Ensure all 100 neurons are visible
 
 # Voltage traces
 ax_voltages = fig.add_subplot(gs[1], sharex=ax_raster)
@@ -57,6 +59,6 @@ ax_rate.set_xlabel('Time (ms)')
 ax_rate.set_ylabel('Firing Rate (Hz)')
 ax_rate.set_title('Population Firing Rate')
 
-# Save visualization
+# Save visualization with adjusted size
 plt.savefig(f'{vis_dir}/run_{run_id}_visualization.png', dpi=300, bbox_inches='tight')
 plt.close()
