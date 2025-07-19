@@ -5,3 +5,7 @@ project_plan.md
 2-intro-to-brian-synapses.ipynb
 3-intro-to-brian-simulations.ipynb
 .ipynb_checkpoints
+
+data/output/*
+!data/output/run_0_spikes.dat
+!data/output/run_0_voltages.dat
