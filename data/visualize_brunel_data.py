@@ -3,12 +3,12 @@ import matplotlib.pyplot as plt
 import os
 
 # Set paths
-output_dir = 'output'  # Input data subfolder
+output_dir = 'output_raw'  # Input data subfolder
 vis_dir = 'visualizations'  # Output visualization subfolder
 os.makedirs(vis_dir, exist_ok=True)  # Create visualizations subfolder if it doesn't exist
 
 # Load data for a specific run (e.g., run_0)
-run_id = 0
+run_id = 45
 spike_data = np.loadtxt(f'{output_dir}/run_{run_id}_spikes.dat')
 voltage_data = np.loadtxt(f'{output_dir}/run_{run_id}_voltages.dat')
 

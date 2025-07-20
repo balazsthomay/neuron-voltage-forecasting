@@ -1,16 +1,37 @@
+# Ignore project planning file
 project_plan.md
 
+# Ignore GitHub configs
+.github/
 .github/chatmodes
-.github
 
+# Ignore Brian2 Jupyter notebooks
 1-intro-to-brian-neurons.ipynb
 2-intro-to-brian-synapses.ipynb
 3-intro-to-brian-simulations.ipynb
+.ipynb_checkpoints/
 
-.ipynb_checkpoints
+# Ignore Python cache
+__pycache__/
+data/__pycache__/
 
-data/output/*
-!data/output/run_0_spikes.dat
-!data/output/run_0_voltages.dat
+# Ignore all of output_raw except run_0 files
+data/output_raw/*
+!data/output_raw/run_0_spikes.dat
+!data/output_raw/run_0_voltages.dat
 
+# Ignore preprocessed dataset due to size
+/data/preprocessed/datasets.pt
+
+# Ignore Brian2 test.py
+/data/test.py
+
+# Ignore OS metadata
 .DS_Store
+
+# Ignore old data simulation scripts
+brunel_2000_modified.py
+brunel_2000_final.py
+
+# Ignore old visualization outputs
+visualizations/
