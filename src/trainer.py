@@ -13,7 +13,7 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim.lr_scheduler import ReduceLROnPlateau, LambdaLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
@@ -160,8 +160,23 @@ class LSTMTrainer:
         logger.info(f"Optimizer: Adam (lr={self.config.training.learning_rate}, wd={self.config.training.weight_decay})")
     
     def _setup_scheduler(self) -> None:
-        """Initialize learning rate scheduler."""
-        self.scheduler = ReduceLROnPlateau(
+        """Initialize learning rate scheduler with warmup."""
+        # Warmup scheduler for stable training start
+        if self.config.training.warmup_epochs > 0:
+            def warmup_lambda(epoch):
+                if epoch < self.config.training.warmup_epochs:
+                    # Linear warmup from warmup_start_lr to learning_rate
+                    warmup_ratio = self.config.training.warmup_start_lr / self.config.training.learning_rate
+                    return warmup_ratio + (1 - warmup_ratio) * epoch / self.config.training.warmup_epochs
+                else:
+                    return 1.0
+            
+            self.warmup_scheduler = LambdaLR(self.optimizer, lr_lambda=warmup_lambda)
+        else:
+            self.warmup_scheduler = None
+            
+        # Main scheduler for learning rate decay
+        self.main_scheduler = ReduceLROnPlateau(
             self.optimizer,
             mode='min',
             factor=self.config.training.scheduler_factor,
@@ -169,7 +184,9 @@ class LSTMTrainer:
             min_lr=self.config.training.scheduler_min_lr,
             verbose=True
         )
-        logger.info("Scheduler: ReduceLROnPlateau initialized")
+        
+        self.warmup_completed = False
+        logger.info(f"Scheduler initialized with {self.config.training.warmup_epochs} warmup epochs")
     
     def _setup_loss_function(self) -> None:
         """Initialize loss function."""
@@ -281,7 +298,11 @@ class LSTMTrainer:
             filepath=self.config.paths.best_model_path,
             epoch=self.current_epoch,
             optimizer_state=self.optimizer.state_dict(),
-            scheduler_state=self.scheduler.state_dict(),
+            scheduler_state={
+                'main_scheduler': self.main_scheduler.state_dict(),
+                'warmup_completed': self.warmup_completed,
+                'warmup_scheduler': self.warmup_scheduler.state_dict() if self.warmup_scheduler else None
+            },
             metrics={
                 'best_val_loss': self.best_val_loss,
                 'train_loss': self.history['train_loss'][-1] if self.history['train_loss'] else 0,
@@ -296,7 +317,11 @@ class LSTMTrainer:
             filepath=self.config.paths.latest_model_path,
             epoch=self.current_epoch,
             optimizer_state=self.optimizer.state_dict(),
-            scheduler_state=self.scheduler.state_dict(),
+            scheduler_state={
+                'main_scheduler': self.main_scheduler.state_dict(),
+                'warmup_completed': self.warmup_completed,
+                'warmup_scheduler': self.warmup_scheduler.state_dict() if self.warmup_scheduler else None
+            },
             metrics={
                 'val_loss': self.history['val_loss'][-1] if self.history['val_loss'] else 0,
                 'train_loss': self.history['train_loss'][-1] if self.history['train_loss'] else 0,
@@ -336,8 +361,17 @@ class LSTMTrainer:
                 self.history['val_loss'].append(val_loss)
                 self.history['learning_rate'].append(self.optimizer.param_groups[0]['lr'])
                 
-                # Scheduler step
-                self.scheduler.step(val_loss)
+                # Scheduler step with warmup support
+                current_epoch = len(self.history['train_loss'])
+                if self.warmup_scheduler and current_epoch <= self.config.training.warmup_epochs:
+                    # Use warmup scheduler during warmup period
+                    self.warmup_scheduler.step()
+                else:
+                    # Use main scheduler after warmup
+                    if not self.warmup_completed:
+                        logger.info(f"Warmup completed at epoch {current_epoch}. Switching to main scheduler.")
+                        self.warmup_completed = True
+                    self.main_scheduler.step(val_loss)
                 
                 # Save best model
                 if val_loss < self.best_val_loss:
