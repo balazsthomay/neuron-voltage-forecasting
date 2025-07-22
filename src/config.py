@@ -15,10 +15,10 @@ class ModelConfig:
     """Configuration for LSTM model architecture."""
     
     input_size: int = 100  # Number of neurons
-    hidden_size: int = 512  # Hidden units in LSTM layers (increased from 256)
-    num_layers: int = 3  # Number of LSTM layers (increased from 2)
+    hidden_size: int = 384  # Balanced capacity between 256 and 512
+    num_layers: int = 2  # Return to 2 layers for stability  
     output_size: int = 100  # Output neurons (same as input)
-    dropout: float = 0.2  # Dropout rate (reduced from 0.3)
+    dropout: float = 0.25  # Moderate dropout for regularization
     sequence_length: int = 100  # Input sequence length
     
     # Enhanced architecture options
@@ -44,17 +44,17 @@ class TrainingConfig:
     
     epochs: int = 200
     batch_size: int = 32
-    learning_rate: float = 0.005  # Increased from 0.001
-    weight_decay: float = 1e-4  # Added weight decay for regularization
+    learning_rate: float = 0.002  # Conservative LR for stable training
+    weight_decay: float = 5e-5  # Reduced weight decay  
     grad_clip_max_norm: float = 1.0
     
     # Learning rate warmup
-    warmup_epochs: int = 10  # Warmup phase for stable training
-    warmup_start_lr: float = 1e-6  # Starting LR for warmup
+    warmup_epochs: int = 5  # Shorter warmup phase
+    warmup_start_lr: float = 5e-6  # Higher starting LR for stability
     
     # Early stopping
-    early_stopping_patience: int = 15  # Increased patience for larger model
-    early_stopping_min_delta: float = 1e-5  # More sensitive stopping
+    early_stopping_patience: int = 20  # More patience for large model
+    early_stopping_min_delta: float = 1e-6  # Less sensitive stopping
     
     # Learning rate scheduler
     scheduler_factor: float = 0.7  # Less aggressive reduction
