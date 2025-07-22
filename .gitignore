@@ -1,6 +1,3 @@
-# Ignore project planning file
-project_plan.md
-
 # Ignore Brian2 Jupyter notebooks
 notebooks/1-intro-to-brian-neurons.ipynb
 notebooks/2-intro-to-brian-synapses.ipynb
