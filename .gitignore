@@ -2,6 +2,7 @@
 notebooks/1-intro-to-brian-neurons.ipynb
 notebooks/2-intro-to-brian-synapses.ipynb
 notebooks/3-intro-to-brian-simulations.ipynb
+notebooks/data-exploration.ipynb
 notebooks/.ipynb_checkpoints/
 
 # Ignore Python cache
