@@ -10,8 +10,6 @@ from typing import Tuple, Dict, Any, Optional
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
 
 from .config import ModelConfig, DeviceConfig
 
@@ -51,6 +49,7 @@ class LSTMForecaster(nn.Module):
         # Enhanced LSTM architecture
         self.use_residual = config.use_residual
         self.use_layer_norm = config.use_layer_norm
+        self.use_attention = config.use_attention
         
         # LSTM layers
         self.lstm = nn.LSTM(
@@ -72,6 +71,16 @@ class LSTMForecaster(nn.Module):
         # Residual connection projection (if input/output sizes differ)
         if self.use_residual and config.input_size != config.hidden_size:
             self.residual_projection = nn.Linear(config.input_size, config.hidden_size)
+        
+        # Attention mechanism for temporal focus
+        if self.use_attention:
+            self.attention = nn.MultiheadAttention(
+                embed_dim=config.hidden_size,
+                num_heads=8,
+                dropout=config.dropout,
+                batch_first=True
+            )
+            self.attention_layer_norm = nn.LayerNorm(config.hidden_size)
         
         # Output layer
         self.output_layer = nn.Linear(config.hidden_size, config.output_size)
@@ -138,7 +147,16 @@ class LSTMForecaster(nn.Module):
         x = x.to(self.device)
         
         # LSTM forward pass
-        lstm_out, (hidden, cell) = self.lstm(x)
+        lstm_out, _ = self.lstm(x)  # Ignore hidden states
+        
+        # Apply attention mechanism if enabled
+        if self.use_attention:
+            # Self-attention on LSTM outputs
+            attended_out, _ = self.attention(
+                lstm_out, lstm_out, lstm_out
+            )
+            # Residual connection + layer norm
+            lstm_out = self.attention_layer_norm(lstm_out + attended_out)
         
         # Use the last output for prediction
         last_output = lstm_out[:, -1, :]  # (batch_size, hidden_size)

@@ -24,7 +24,7 @@ class ModelConfig:
     # Enhanced architecture options
     use_residual: bool = True  # Add residual connections
     use_layer_norm: bool = True  # Add layer normalization
-    use_attention: bool = False  # Optional attention mechanism
+    use_attention: bool = True  # Enable attention mechanism for temporal focus
     
     def __post_init__(self) -> None:
         """Validate model configuration parameters."""
@@ -44,9 +44,9 @@ class TrainingConfig:
     
     epochs: int = 200
     batch_size: int = 32
-    learning_rate: float = 0.002  # Conservative LR for stable training
-    weight_decay: float = 5e-5  # Reduced weight decay  
-    grad_clip_max_norm: float = 1.0
+    learning_rate: float = 0.0025  # Slightly higher for attention model
+    weight_decay: float = 1e-4  # Increased for attention regularization
+    grad_clip_max_norm: float = 0.5  # Tighter gradient clipping
     
     # Learning rate warmup
     warmup_epochs: int = 5  # Shorter warmup phase
