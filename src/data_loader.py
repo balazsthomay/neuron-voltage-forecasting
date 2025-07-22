@@ -1,21 +1,24 @@
 """
-Data loading and preprocessing module for LSTM voltage forecasting.
+Integrated data processing and loading module for LSTM voltage forecasting.
 
-This module handles loading preprocessed datasets, creating sequences,
-and preparing data loaders with proper device placement and normalization.
+This module handles the complete data pipeline from raw simulation files
+to training-ready DataLoaders, including preprocessing, sequence creation,
+and device-optimized batch loading.
 """
 
-import pickle
 import logging
-from typing import Tuple, Dict, Any, Optional
+import os
+import pickle
+import hashlib
 from pathlib import Path
+from typing import Tuple, Dict, Any, Optional, List
 
 import torch
 import torch.utils.data as data
 import numpy as np
-from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
 
-from .config import Config, DataConfig, DeviceConfig
+from .config import Config
 
 
 logger = logging.getLogger(__name__)
@@ -72,8 +75,281 @@ class VoltageSequenceDataset(data.Dataset):
         }
 
 
+class DataProcessor:
+    """Handles raw data processing and preprocessing operations."""
+    
+    def __init__(self, config: Config) -> None:
+        """
+        Initialize data processor.
+        
+        Args:
+            config: Main configuration object
+        """
+        self.config = config
+        self.data_config = config.data
+        logger.info("DataProcessor initialized")
+    
+    def detect_spikes(self, voltages: np.ndarray) -> np.ndarray:
+        """
+        Detect spikes from voltage traces using threshold crossing.
+        
+        Args:
+            voltages: Voltage array of shape (n_neurons, n_timesteps)
+            
+        Returns:
+            Binary spike array of shape (n_neurons, n_timesteps)
+        """
+        n_neurons, n_timesteps = voltages.shape
+        spikes = np.zeros_like(voltages, dtype=bool)
+        
+        threshold = self.data_config.spike_threshold
+        refractory_samples = self.data_config.refractory_samples
+        
+        for neuron_idx in range(n_neurons):
+            v = voltages[neuron_idx]
+            # Find threshold crossings
+            crossings = np.where((v[:-1] < threshold) & (v[1:] >= threshold))[0] + 1
+            
+            # Enforce refractory period
+            if len(crossings) > 0:
+                valid_spikes = [crossings[0]]
+                for spike_time in crossings[1:]:
+                    if spike_time - valid_spikes[-1] >= refractory_samples:
+                        valid_spikes.append(spike_time)
+                
+                spikes[neuron_idx, valid_spikes] = True
+        
+        return spikes
+    
+    def load_simulation_data(self) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+        """
+        Load all simulation runs from the raw data directory.
+        
+        Returns:
+            Tuple of (voltage_traces_list, spike_times_list)
+        """
+        voltage_traces = []
+        spike_times = []
+        
+        data_dir = self.data_config.raw_data_dir
+        n_runs = self.data_config.n_simulation_runs
+        
+        logger.info(f"Loading {n_runs} simulation runs from {data_dir}")
+        
+        for run_id in tqdm(range(n_runs), desc="Loading simulation data"):
+            # Load voltage data
+            voltage_file = os.path.join(data_dir, f'run_{run_id}_voltages.dat')
+            if not os.path.exists(voltage_file):
+                logger.warning(f"Voltage file not found: {voltage_file}")
+                continue
+                
+            voltage_data = np.loadtxt(voltage_file)
+            
+            # Extract time column and voltage matrix
+            times = voltage_data[:, 0]
+            voltages = voltage_data[:, 1:].T  # Shape: (n_neurons, n_timesteps)
+            
+            # Load spike data for validation (optional)
+            spike_file = os.path.join(data_dir, f'run_{run_id}_spikes.dat')
+            if os.path.exists(spike_file):
+                spikes = np.loadtxt(spike_file)
+                spike_times.append(spikes)
+            else:
+                spike_times.append(np.array([]))  # Empty array if no spike data
+            
+            voltage_traces.append(voltages)
+        
+        logger.info(f"Loaded {len(voltage_traces)} voltage traces")
+        return voltage_traces, spike_times
+    
+    def preprocess_voltages(self, voltage_traces: List[np.ndarray]) -> Tuple[np.ndarray, Dict]:
+        """
+        Preprocess voltage traces: discard transients, normalize, add noise.
+        
+        Args:
+            voltage_traces: List of voltage arrays from each run
+            
+        Returns:
+            Tuple of (processed_voltages, normalization_params)
+        """
+        processed_runs = []
+        discard_ms = self.data_config.discard_initial_ms
+        
+        logger.info(f"Preprocessing {len(voltage_traces)} voltage traces")
+        logger.info(f"Discarding initial {discard_ms}ms, adding noise: {self.data_config.add_noise}")
+        
+        # Process each run
+        for voltages in voltage_traces:
+            # Discard initial transient
+            voltages = voltages[:, discard_ms:]
+            
+            # Add measurement noise if requested
+            if self.data_config.add_noise:
+                noise = np.random.normal(0, self.data_config.noise_std, voltages.shape)
+                voltages = voltages + noise
+            
+            processed_runs.append(voltages)
+        
+        # Concatenate all runs along time axis
+        all_voltages = np.hstack(processed_runs)  # Shape: (n_neurons, total_timesteps)
+        
+        logger.info(f"Combined voltage shape: {all_voltages.shape}")
+        
+        # Calculate normalization parameters (per-neuron z-score)
+        means = np.mean(all_voltages, axis=1, keepdims=True)
+        stds = np.std(all_voltages, axis=1, keepdims=True)
+        
+        # Avoid division by zero
+        stds[stds == 0] = 1.0
+        
+        # Normalize
+        normalized_voltages = (all_voltages - means) / stds
+        
+        normalization_params = {
+            'means': means,
+            'stds': stds,
+            'discard_initial_ms': discard_ms,
+            'noise_std': self.data_config.noise_std if self.data_config.add_noise else 0.0
+        }
+        
+        logger.info(f"Normalization - Mean: {normalized_voltages.mean():.6f}, Std: {normalized_voltages.std():.6f}")
+        
+        return normalized_voltages, normalization_params
+    
+    def create_sequences(self, voltages: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Create overlapping sequences for time series prediction.
+        
+        Args:
+            voltages: Normalized voltage array of shape (n_neurons, n_timesteps)
+            
+        Returns:
+            Tuple of (sequences, targets) arrays
+        """
+        sequence_length = self.data_config.sequence_length
+        stride = self.data_config.sequence_stride
+        
+        n_neurons, n_timesteps = voltages.shape
+        sequences = []
+        targets = []
+        
+        logger.info(f"Creating sequences: length={sequence_length}, stride={stride}")
+        
+        # Create sequences with sliding window
+        for start_idx in range(0, n_timesteps - sequence_length - 1, stride):
+            # Input sequence
+            seq = voltages[:, start_idx:start_idx + sequence_length].T  # (seq_len, n_neurons)
+            # Target is next timestep
+            target = voltages[:, start_idx + sequence_length]  # (n_neurons,)
+            
+            sequences.append(seq)
+            targets.append(target)
+        
+        sequences = np.array(sequences)
+        targets = np.array(targets)
+        
+        logger.info(f"Created {len(sequences)} sequences of shape {sequences[0].shape}")
+        
+        return sequences, targets
+    
+    def get_config_hash(self) -> str:
+        """Generate hash of preprocessing configuration for cache validation."""
+        config_dict = {
+            'n_runs': self.data_config.n_simulation_runs,
+            'discard_ms': self.data_config.discard_initial_ms,
+            'add_noise': self.data_config.add_noise,
+            'noise_std': self.data_config.noise_std,
+            'sequence_length': self.data_config.sequence_length,
+            'stride': self.data_config.sequence_stride,
+        }
+        config_str = str(sorted(config_dict.items()))
+        return hashlib.md5(config_str.encode()).hexdigest()[:8]
+    
+    def save_processed_data(self, sequences: np.ndarray, targets: np.ndarray, 
+                           normalization_params: Dict) -> None:
+        """Save processed data to cache."""
+        cache_dir = Path(self.data_config.preprocessed_dir)
+        cache_dir.mkdir(exist_ok=True)
+        
+        cache_data = {
+            'sequences': torch.tensor(sequences, dtype=torch.float32),
+            'targets': torch.tensor(targets, dtype=torch.float32),
+            'config_hash': self.get_config_hash(),
+            'normalization_params': normalization_params
+        }
+        
+        torch.save(cache_data, self.data_config.cache_file)
+        
+        # Also save normalization params separately for compatibility
+        with open(self.data_config.normalization_params_path, 'wb') as f:
+            pickle.dump(normalization_params, f)
+        
+        logger.info(f"Processed data cached to {self.data_config.cache_file}")
+    
+    def load_cached_data(self) -> Optional[Tuple[torch.Tensor, torch.Tensor, Dict]]:
+        """Load cached processed data if available and valid."""
+        if not self.data_config.use_cache or self.data_config.force_reprocess:
+            return None
+        
+        cache_file = Path(self.data_config.cache_file)
+        if not cache_file.exists():
+            logger.info("No cached data found")
+            return None
+        
+        try:
+            cache_data = torch.load(cache_file, map_location='cpu')
+            
+            # Validate config hash
+            if cache_data.get('config_hash') != self.get_config_hash():
+                logger.info("Cache invalidated: configuration changed")
+                return None
+            
+            logger.info("Loading data from cache")
+            return (
+                cache_data['sequences'],
+                cache_data['targets'], 
+                cache_data['normalization_params']
+            )
+            
+        except Exception as e:
+            logger.warning(f"Failed to load cache: {e}")
+            return None
+    
+    def process_data(self) -> Tuple[torch.Tensor, torch.Tensor, Dict]:
+        """
+        Main data processing pipeline.
+        
+        Returns:
+            Tuple of (sequences, targets, normalization_params)
+        """
+        # Try loading from cache first
+        cached_data = self.load_cached_data()
+        if cached_data is not None:
+            return cached_data
+        
+        logger.info("Processing data from raw simulation files")
+        
+        # Load raw simulation data
+        voltage_traces, spike_times = self.load_simulation_data()
+        
+        # Preprocess voltages
+        normalized_voltages, normalization_params = self.preprocess_voltages(voltage_traces)
+        
+        # Create sequences
+        sequences, targets = self.create_sequences(normalized_voltages)
+        
+        # Convert to tensors
+        sequences_tensor = torch.tensor(sequences, dtype=torch.float32)
+        targets_tensor = torch.tensor(targets, dtype=torch.float32)
+        
+        # Save to cache
+        self.save_processed_data(sequences, targets, normalization_params)
+        
+        return sequences_tensor, targets_tensor, normalization_params
+
+
 class DataLoader:
-    """Main data loading class with comprehensive data handling."""
+    """Main data loading class with integrated preprocessing."""
     
     def __init__(self, config: Config) -> None:
         """
@@ -87,98 +363,21 @@ class DataLoader:
         self.device_config = config.device
         self.model_config = config.model
         
-        self.scaler: Optional[StandardScaler] = None
+        self.processor = DataProcessor(config)
         self.normalization_params: Optional[Dict[str, Any]] = None
         
         logger.info("DataLoader initialized")
     
-    def load_preprocessed_data(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def validate_and_update_config(self, sequences: torch.Tensor, targets: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        Load preprocessed voltage data from file.
-        
-        Returns:
-            Tuple of (sequences, targets) tensors
-        """
-        data_path = Path(self.data_config.data_path)
-        if not data_path.exists():
-            raise FileNotFoundError(f"Data file not found: {data_path}")
-        
-        logger.info(f"Loading data from {data_path}")
-        
-        try:
-            # Load data without class dependencies
-            import pickle
-            with open(data_path, 'rb') as f:
-                # Custom unpickler to handle missing class
-                class CustomUnpickler(pickle.Unpickler):
-                    def find_class(self, module, name):
-                        if name == 'NeuralVoltageDataset':
-                            # Return a dummy class that we can extract data from
-                            return object
-                        return super().find_class(module, name)
-                
-                unpickler = CustomUnpickler(f)
-                data = unpickler.load()
-        except:
-            # If custom unpickler fails, try loading with torch.load
-            try:
-                import sys
-                # Add dummy class to avoid deserialization error
-                sys.modules['__main__'].NeuralVoltageDataset = type('NeuralVoltageDataset', (), {
-                    '__init__': lambda self, seq, tar: setattr(self, 'sequences', seq) or setattr(self, 'targets', tar)
-                })
-                data = torch.load(data_path, map_location='cpu')
-            except Exception as e:
-                raise RuntimeError(f"Could not load data file {data_path}: {e}")
-        
-        # Extract sequences and targets from the loaded datasets
-        all_sequences = []
-        all_targets = []
-        
-        if isinstance(data, dict):
-            # Process train/val/test datasets
-            for split in ['train', 'val', 'test']:
-                if split in data:
-                    dataset = data[split]
-                    if hasattr(dataset, 'sequences') and hasattr(dataset, 'targets'):
-                        all_sequences.append(dataset.sequences)
-                        all_targets.append(dataset.targets)
-            
-            if not all_sequences:
-                raise ValueError("No valid datasets found in loaded data")
-            
-            # Concatenate all splits
-            sequences = torch.cat(all_sequences, dim=0)
-            targets = torch.cat(all_targets, dim=0)
-        else:
-            raise ValueError("Expected dictionary with train/val/test splits")
-        
-        logger.info(f"Loaded sequences shape: {sequences.shape}")
-        logger.info(f"Loaded targets shape: {targets.shape}")
-        
-        return sequences, targets
-    
-    def load_normalization_params(self) -> None:
-        """Load normalization parameters from file."""
-        params_path = Path(self.data_config.normalization_params_path)
-        if params_path.exists():
-            logger.info(f"Loading normalization parameters from {params_path}")
-            with open(params_path, 'rb') as f:
-                self.normalization_params = pickle.load(f)
-            logger.info("Normalization parameters loaded successfully")
-        else:
-            logger.warning(f"Normalization parameters not found at {params_path}")
-    
-    def validate_sequences(self, sequences: torch.Tensor, targets: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Validate and potentially adjust pre-created sequences and targets.
+        Validate sequences and update model config if needed.
         
         Args:
-            sequences: Pre-created sequences tensor
-            targets: Pre-created targets tensor
+            sequences: Input sequences tensor
+            targets: Target values tensor
             
         Returns:
-            Tuple of validated (sequences, targets)
+            Validated (sequences, targets)
         """
         # Validate shapes
         if len(sequences.shape) != 3:
@@ -196,22 +395,15 @@ class DataLoader:
         if num_features != target_features:
             raise ValueError(f"Sequences and targets have different feature counts: {num_features} vs {target_features}")
         
-        # Check if sequence length matches config
-        expected_seq_len = self.model_config.sequence_length
-        if seq_len != expected_seq_len:
-            logger.warning(f"Sequence length mismatch: data has {seq_len}, config expects {expected_seq_len}")
-            # Update config to match data
+        # Update model config to match data
+        if seq_len != self.model_config.sequence_length:
+            logger.info(f"Updating model sequence_length: {self.model_config.sequence_length} -> {seq_len}")
             self.model_config.sequence_length = seq_len
-            logger.info(f"Updated model config sequence_length to {seq_len}")
         
-        # Check if feature count matches config
-        expected_features = self.model_config.input_size
-        if num_features != expected_features:
-            logger.warning(f"Feature count mismatch: data has {num_features}, config expects {expected_features}")
-            # Update config to match data
+        if num_features != self.model_config.input_size:
+            logger.info(f"Updating model input/output size: {self.model_config.input_size} -> {num_features}")
             self.model_config.input_size = num_features
             self.model_config.output_size = num_features
-            logger.info(f"Updated model config input/output size to {num_features}")
         
         logger.info(f"Validated {batch_size} sequences of length {seq_len} with {num_features} features")
         return sequences, targets
@@ -264,17 +456,17 @@ class DataLoader:
     
     def create_data_loaders(self) -> Tuple[data.DataLoader, data.DataLoader, data.DataLoader]:
         """
-        Create complete data loading pipeline.
+        Create complete data loading pipeline from raw data to DataLoaders.
         
         Returns:
             Tuple of (train_loader, val_loader, test_loader)
         """
-        # Load preprocessed sequences and targets
-        sequences, targets = self.load_preprocessed_data()
-        self.load_normalization_params()
+        # Process data from raw files or cache
+        sequences, targets, normalization_params = self.processor.process_data()
+        self.normalization_params = normalization_params
         
-        # Validate sequences and adjust config if needed
-        sequences, targets = self.validate_sequences(sequences, targets)
+        # Validate and update config
+        sequences, targets = self.validate_and_update_config(sequences, targets)
         
         # Split data
         (train_seq, train_targets), (val_seq, val_targets), (test_seq, test_targets) = self.split_data(
@@ -323,8 +515,8 @@ class DataLoader:
         all_targets = []
         
         for sequences, targets in data_loader:
-            all_sequences.append(sequences)
-            all_targets.append(targets)
+            all_sequences.append(sequences.cpu())
+            all_targets.append(targets.cpu())
         
         all_sequences = torch.cat(all_sequences, dim=0)
         all_targets = torch.cat(all_targets, dim=0)

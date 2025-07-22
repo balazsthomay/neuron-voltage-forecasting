@@ -68,15 +68,38 @@ class TrainingConfig:
 
 @dataclass
 class DataConfig:
-    """Configuration for data handling."""
+    """Configuration for data handling and preprocessing."""
     
-    data_path: str = "data/preprocessed/datasets.pt"
+    # Raw data paths
+    raw_data_dir: str = "data/output_raw"
+    n_simulation_runs: int = 50
+    
+    # Preprocessed data paths (for caching)
+    preprocessed_dir: str = "data/preprocessed"
+    cache_file: str = "data/preprocessed/processed_data.pt"
     normalization_params_path: str = "data/preprocessed/normalization_params.pkl"
+    
+    # Preprocessing parameters
+    discard_initial_ms: int = 1000  # Remove transient dynamics
+    add_noise: bool = True
+    noise_std: float = 0.3  # mV
+    spike_threshold: float = -50.0  # mV
+    refractory_samples: int = 20  # 2ms at 0.1ms dt
+    
+    # Sequence parameters
+    sequence_length: int = 100  # 100ms windows
+    sequence_stride: int = 10   # 10ms stride (90% overlap)
+    
+    # Data splits
     train_split: float = 0.7
     val_split: float = 0.15
     test_split: float = 0.15
     shuffle_data: bool = True
     random_seed: int = 42
+    
+    # Caching options
+    use_cache: bool = True
+    force_reprocess: bool = False
     
     def __post_init__(self) -> None:
         """Validate data configuration parameters."""
@@ -85,6 +108,12 @@ class DataConfig:
             raise ValueError(f"Data splits must sum to 1.0, got {total_split}")
         if not all(0 < split < 1 for split in [self.train_split, self.val_split, self.test_split]):
             raise ValueError("All data splits must be between 0 and 1")
+        if self.sequence_length <= 0:
+            raise ValueError(f"sequence_length must be positive, got {self.sequence_length}")
+        if self.sequence_stride <= 0:
+            raise ValueError(f"sequence_stride must be positive, got {self.sequence_stride}")
+        if self.n_simulation_runs <= 0:
+            raise ValueError(f"n_simulation_runs must be positive, got {self.n_simulation_runs}")
 
 
 @dataclass
