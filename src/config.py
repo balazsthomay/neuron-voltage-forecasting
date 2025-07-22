@@ -23,8 +23,9 @@ class ModelConfig:
     
     # Enhanced architecture options
     use_residual: bool = True  # Add residual connections
-    use_layer_norm: bool = True  # Add layer normalization
+    use_layer_norm: bool = True  # Add layer normalization  
     use_attention: bool = False  # Disable attention (didn't improve performance)
+    use_cnn_features: bool = True  # Enable CNN feature extraction for spatial patterns
     
     def __post_init__(self) -> None:
         """Validate model configuration parameters."""
@@ -44,9 +45,9 @@ class TrainingConfig:
     
     epochs: int = 200
     batch_size: int = 32
-    learning_rate: float = 0.0025  # Slightly higher for attention model
-    weight_decay: float = 1e-4  # Increased for attention regularization
-    grad_clip_max_norm: float = 0.5  # Tighter gradient clipping
+    learning_rate: float = 0.003  # Slightly higher for CNN-LSTM complexity
+    weight_decay: float = 1e-4  # Weight decay for CNN regularization
+    grad_clip_max_norm: float = 1.0  # Standard gradient clipping
     
     # Learning rate warmup
     warmup_epochs: int = 5  # Shorter warmup phase
@@ -106,9 +107,12 @@ class DataConfig:
     shuffle_data: bool = True
     random_seed: int = 42
     
+    # Ensemble configuration
+    ensemble_size: int = 3  # Number of models to train for ensemble
+    
     # Caching options
     use_cache: bool = True
-    force_reprocess: bool = True  # Force reprocessing with new parameters
+    force_reprocess: bool = False  # Use existing preprocessed data
     
     def __post_init__(self) -> None:
         """Validate data configuration parameters."""
