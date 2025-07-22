@@ -50,10 +50,32 @@ class LSTMForecaster(nn.Module):
         self.use_residual = config.use_residual
         self.use_layer_norm = config.use_layer_norm
         self.use_attention = config.use_attention
+        self.use_cnn_features = config.use_cnn_features
+        
+        # CNN feature extraction (optional)
+        if self.use_cnn_features:
+            self.cnn_features = nn.Sequential(
+                # 1D convolution across neurons (spatial dimension)
+                nn.Conv1d(in_channels=config.sequence_length, out_channels=config.sequence_length, 
+                         kernel_size=3, padding=1, groups=1),
+                nn.ReLU(),
+                nn.BatchNorm1d(config.sequence_length),
+                nn.Dropout1d(0.1),
+                
+                # Second conv layer for deeper features
+                nn.Conv1d(in_channels=config.sequence_length, out_channels=config.sequence_length,
+                         kernel_size=5, padding=2, groups=1),
+                nn.ReLU(),
+                nn.BatchNorm1d(config.sequence_length),
+                nn.Dropout1d(0.1)
+            )
+            lstm_input_size = config.input_size  # CNN preserves neuron dimension
+        else:
+            lstm_input_size = config.input_size
         
         # LSTM layers
         self.lstm = nn.LSTM(
-            input_size=config.input_size,
+            input_size=lstm_input_size,
             hidden_size=config.hidden_size,
             num_layers=config.num_layers,
             dropout=config.dropout if config.num_layers > 1 else 0,
@@ -145,6 +167,14 @@ class LSTMForecaster(nn.Module):
         
         # Ensure input is on correct device
         x = x.to(self.device)
+        
+        # CNN feature extraction if enabled
+        if self.use_cnn_features:
+            # Apply CNN to extract spatial features across neurons
+            # x shape: (batch_size, sequence_length, input_size)
+            x_cnn = self.cnn_features(x)  # Same shape output
+            # Add residual connection with original input
+            x = x + x_cnn
         
         # LSTM forward pass
         lstm_out, _ = self.lstm(x)  # Ignore hidden states
