@@ -45,16 +45,26 @@ def validate_environment() -> None:
     logger.info(f"CUDA available: {torch.cuda.is_available()}")
     logger.info(f"MPS available: {torch.backends.mps.is_available() if hasattr(torch.backends, 'mps') else False}")
     
-    # Check data files
+    # Check raw data directory
     config = Config()
-    data_path = Path(config.data.data_path)
-    norm_path = Path(config.data.normalization_params_path)
+    raw_data_dir = Path(config.data.raw_data_dir)
     
-    if not data_path.exists():
-        raise FileNotFoundError(f"Dataset file not found: {data_path}")
+    if not raw_data_dir.exists():
+        raise FileNotFoundError(f"Raw data directory not found: {raw_data_dir}")
     
-    if not norm_path.exists():
-        logger.warning(f"Normalization parameters not found: {norm_path}")
+    # Check for at least one simulation file
+    voltage_files = list(raw_data_dir.glob("run_*_voltages.dat"))
+    if not voltage_files:
+        raise FileNotFoundError(f"No voltage simulation files found in {raw_data_dir}")
+    
+    logger.info(f"Found {len(voltage_files)} simulation files in {raw_data_dir}")
+    
+    # Check if cache exists (optional - will be created if needed)
+    cache_file = Path(config.data.cache_file)
+    if cache_file.exists():
+        logger.info(f"Found existing cache: {cache_file}")
+    else:
+        logger.info("No cache found - will process raw data on first run")
     
     logger.info("Environment validation completed")
 
