@@ -14,8 +14,15 @@ data/output_raw/*
 !data/output_raw/run_0_spikes.dat
 !data/output_raw/run_0_voltages.dat
 
-# Ignore preprocessed dataset due to size
-/data/preprocessed/datasets.pt
+# Ignore preprocessed datasets due to size
+/data/preprocessed/preprocesseddatasets.pt
+/data/preprocessed/processed_data.pt
+
+# Ignore trained models (large files)
+/models/*.pth
+
+# Ignore training logs
+/training.log
 
 # Ignore Brian2 test.py
 /data/test.py
