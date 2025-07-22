@@ -19,12 +19,12 @@ class ModelConfig:
     num_layers: int = 2  # Return to 2 layers for stability  
     output_size: int = 100  # Output neurons (same as input)
     dropout: float = 0.25  # Moderate dropout for regularization
-    sequence_length: int = 100  # Input sequence length
+    sequence_length: int = 150  # Input sequence length (increased)
     
     # Enhanced architecture options
     use_residual: bool = True  # Add residual connections
     use_layer_norm: bool = True  # Add layer normalization
-    use_attention: bool = True  # Enable attention mechanism for temporal focus
+    use_attention: bool = False  # Disable attention (didn't improve performance)
     
     def __post_init__(self) -> None:
         """Validate model configuration parameters."""
@@ -89,15 +89,15 @@ class DataConfig:
     normalization_params_path: str = "data/preprocessed/normalization_params.pkl"
     
     # Preprocessing parameters
-    discard_initial_ms: int = 1000  # Remove transient dynamics
+    discard_initial_ms: int = 800  # Reduce discard for more data
     add_noise: bool = True
-    noise_std: float = 0.3  # mV
+    noise_std: float = 0.2  # Reduced noise for cleaner patterns
     spike_threshold: float = -50.0  # mV
     refractory_samples: int = 20  # 2ms at 0.1ms dt
     
-    # Sequence parameters
-    sequence_length: int = 100  # 100ms windows
-    sequence_stride: int = 10   # 10ms stride (90% overlap)
+    # Sequence parameters  
+    sequence_length: int = 150  # Longer windows for better temporal context
+    sequence_stride: int = 15   # Adjusted stride to maintain overlap ratio
     
     # Data splits
     train_split: float = 0.7
@@ -108,7 +108,7 @@ class DataConfig:
     
     # Caching options
     use_cache: bool = True
-    force_reprocess: bool = False
+    force_reprocess: bool = True  # Force reprocessing with new parameters
     
     def __post_init__(self) -> None:
         """Validate data configuration parameters."""
