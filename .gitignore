@@ -1,15 +1,11 @@
 # Ignore project planning file
 project_plan.md
 
-# Ignore GitHub configs
-.github/
-.github/chatmodes
-
 # Ignore Brian2 Jupyter notebooks
-1-intro-to-brian-neurons.ipynb
-2-intro-to-brian-synapses.ipynb
-3-intro-to-brian-simulations.ipynb
-.ipynb_checkpoints/
+notebooks/1-intro-to-brian-neurons.ipynb
+notebooks/2-intro-to-brian-synapses.ipynb
+notebooks/3-intro-to-brian-simulations.ipynb
+notebooks/.ipynb_checkpoints/
 
 # Ignore Python cache
 __pycache__/
@@ -28,10 +24,3 @@ data/output_raw/*
 
 # Ignore OS metadata
 .DS_Store
-
-# Ignore old data simulation scripts
-brunel_2000_modified.py
-brunel_2000_final.py
-
-# Ignore old visualization outputs
-visualizations/
