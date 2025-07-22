@@ -15,11 +15,16 @@ class ModelConfig:
     """Configuration for LSTM model architecture."""
     
     input_size: int = 100  # Number of neurons
-    hidden_size: int = 256  # Hidden units in LSTM layers
-    num_layers: int = 2  # Number of LSTM layers
+    hidden_size: int = 512  # Hidden units in LSTM layers (increased from 256)
+    num_layers: int = 3  # Number of LSTM layers (increased from 2)
     output_size: int = 100  # Output neurons (same as input)
-    dropout: float = 0.3  # Dropout rate
+    dropout: float = 0.2  # Dropout rate (reduced from 0.3)
     sequence_length: int = 100  # Input sequence length
+    
+    # Enhanced architecture options
+    use_residual: bool = True  # Add residual connections
+    use_layer_norm: bool = True  # Add layer normalization
+    use_attention: bool = False  # Optional attention mechanism
     
     def __post_init__(self) -> None:
         """Validate model configuration parameters."""
@@ -39,18 +44,22 @@ class TrainingConfig:
     
     epochs: int = 200
     batch_size: int = 32
-    learning_rate: float = 0.001
-    weight_decay: float = 0.0
+    learning_rate: float = 0.005  # Increased from 0.001
+    weight_decay: float = 1e-4  # Added weight decay for regularization
     grad_clip_max_norm: float = 1.0
     
+    # Learning rate warmup
+    warmup_epochs: int = 10  # Warmup phase for stable training
+    warmup_start_lr: float = 1e-6  # Starting LR for warmup
+    
     # Early stopping
-    early_stopping_patience: int = 10
-    early_stopping_min_delta: float = 1e-6
+    early_stopping_patience: int = 15  # Increased patience for larger model
+    early_stopping_min_delta: float = 1e-5  # More sensitive stopping
     
     # Learning rate scheduler
-    scheduler_factor: float = 0.5
-    scheduler_patience: int = 5
-    scheduler_min_lr: float = 1e-6
+    scheduler_factor: float = 0.7  # Less aggressive reduction
+    scheduler_patience: int = 3  # Reduced patience (was 5)
+    scheduler_min_lr: float = 1e-5  # Higher minimum LR
     
     # Data loading
     num_workers: int = 0  # Set to 0 for MPS compatibility
@@ -167,22 +176,9 @@ class Config:
     
     def __post_init__(self) -> None:
         """Initialize all sub-configurations."""
-        # Ensure all dataclass post_init methods are called
-        if not hasattr(self.model, '_post_init_called'):
-            self.model.__post_init__()
-            self.model._post_init_called = True
-            
-        if not hasattr(self.training, '_post_init_called'):
-            self.training.__post_init__()
-            self.training._post_init_called = True
-            
-        if not hasattr(self.data, '_post_init_called'):
-            self.data.__post_init__()
-            self.data._post_init_called = True
-            
-        if not hasattr(self.device, '_post_init_called'):
-            self.device.__post_init__()
-            self.device._post_init_called = True
+        # Sub-configurations are automatically initialized by dataclass
+        # No need to manually call __post_init__ or track _post_init_called
+        pass
     
     def validate_compatibility(self) -> None:
         """Validate cross-configuration compatibility."""

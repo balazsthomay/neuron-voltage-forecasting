@@ -21,10 +21,12 @@ logger = logging.getLogger(__name__)
 
 class LSTMForecaster(nn.Module):
     """
-    Multi-layer LSTM model for voltage forecasting.
+    Enhanced multi-layer LSTM model for voltage forecasting.
     
     Architecture:
-    - 2 LSTM layers with 256 hidden units each
+    - 3 LSTM layers with 512 hidden units each
+    - Residual connections for improved gradient flow
+    - Layer normalization for training stability
     - Dropout for regularization
     - Dense output layer for multi-neuron prediction
     """
@@ -46,6 +48,10 @@ class LSTMForecaster(nn.Module):
         # Validate configuration
         self._validate_config()
         
+        # Enhanced LSTM architecture
+        self.use_residual = config.use_residual
+        self.use_layer_norm = config.use_layer_norm
+        
         # LSTM layers
         self.lstm = nn.LSTM(
             input_size=config.input_size,
@@ -56,8 +62,16 @@ class LSTMForecaster(nn.Module):
             bias=True
         )
         
-        # Dropout layer (applied after LSTM)
+        # Layer normalization (applied after LSTM)
+        if self.use_layer_norm:
+            self.layer_norm = nn.LayerNorm(config.hidden_size)
+        
+        # Dropout layer
         self.dropout = nn.Dropout(config.dropout)
+        
+        # Residual connection projection (if input/output sizes differ)
+        if self.use_residual and config.input_size != config.hidden_size:
+            self.residual_projection = nn.Linear(config.input_size, config.hidden_size)
         
         # Output layer
         self.output_layer = nn.Linear(config.hidden_size, config.output_size)
@@ -128,6 +142,22 @@ class LSTMForecaster(nn.Module):
         
         # Use the last output for prediction
         last_output = lstm_out[:, -1, :]  # (batch_size, hidden_size)
+        
+        # Apply layer normalization if enabled
+        if self.use_layer_norm:
+            last_output = self.layer_norm(last_output)
+        
+        # Residual connection if enabled
+        if self.use_residual:
+            # Use the last timestep of input for residual
+            residual = x[:, -1, :]  # (batch_size, input_size)
+            
+            # Project residual if dimensions don't match
+            if hasattr(self, 'residual_projection'):
+                residual = self.residual_projection(residual)
+            
+            # Add residual connection
+            last_output = last_output + residual
         
         # Apply dropout
         dropped_output = self.dropout(last_output)
