@@ -295,5 +295,4 @@ Years 3-4: Phase 8 - Advanced Applications
 - **[README.md](README.md)** - Project navigation hub and quick start
 - **[TECHNICAL_REPORT.md](TECHNICAL_REPORT.md)** - Complete findings consolidation
 - **[METHODOLOGY.md](METHODOLOGY.md)** - Step-by-step reproducibility guide
-- **[MODEL_TRAINING_RESULTS.md](MODEL_TRAINING_RESULTS.md)** - Detailed training results  
-- **[project_plan.md](project_plan.md)** - Original project planning phases
+- **[MODEL_TRAINING_RESULTS.md](MODEL_TRAINING_RESULTS.md)** - Detailed training results

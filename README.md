@@ -25,7 +25,6 @@ python -m src.interpretability
 - **[FUTURE_ROADMAP.md](FUTURE_ROADMAP.md)** - Biological data adaptation pathway
 
 ### 📈 Analysis & Results
-- **[project_plan.md](project_plan.md)** - Original project planning and phases
 - **src/analysis_results/** - Error analysis visualizations and metrics
 - **src/interpretability_results/** - Model interpretability analysis
 
@@ -43,7 +42,6 @@ organoid_activity/
 ├── METHODOLOGY.md               # Reproducibility guide
 ├── FUTURE_ROADMAP.md           # Next steps
 ├── MODEL_TRAINING_RESULTS.md   # Training details
-├── project_plan.md             # Original planning
 ├── src/                        # Source code
 │   ├── lstm_forecaster.py      # CNN-LSTM model architecture
 │   ├── trainer.py              # Training pipeline

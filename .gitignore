@@ -32,3 +32,6 @@ data/output_raw/*
 
 # Business-focused documentation (not for technical repository)
 STRATEGIC_OVERVIEW.md
+
+# Internal planning documents
+project_plan.md

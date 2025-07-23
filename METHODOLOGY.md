@@ -375,4 +375,3 @@ output_shape: [batch_size, num_neurons]
 - **[TECHNICAL_REPORT.md](TECHNICAL_REPORT.md)** - Complete findings consolidation
 - **[FUTURE_ROADMAP.md](FUTURE_ROADMAP.md)** - Biological data adaptation pathway  
 - **[MODEL_TRAINING_RESULTS.md](MODEL_TRAINING_RESULTS.md)** - Detailed training results
-- **[project_plan.md](project_plan.md)** - Original project planning phases

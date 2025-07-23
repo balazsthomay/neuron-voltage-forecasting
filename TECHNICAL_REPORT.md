@@ -258,4 +258,3 @@ This work demonstrates significant progress in neural voltage forecasting throug
 - **[METHODOLOGY.md](METHODOLOGY.md)** - Step-by-step reproducibility guide  
 - **[FUTURE_ROADMAP.md](FUTURE_ROADMAP.md)** - Biological data adaptation pathway
 - **[MODEL_TRAINING_RESULTS.md](MODEL_TRAINING_RESULTS.md)** - Detailed training results
-- **[project_plan.md](project_plan.md)** - Original project planning phases
