@@ -29,3 +29,6 @@ data/output_raw/*
 
 # Ignore OS metadata
 .DS_Store
+
+# Business-focused documentation (not for technical repository)
+STRATEGIC_OVERVIEW.md
