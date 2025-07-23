@@ -20,9 +20,7 @@ python -m src.interpretability
 
 ### 📊 Core Documentation
 - **[TECHNICAL_REPORT.md](TECHNICAL_REPORT.md)** - Complete findings consolidation
-- **[MODEL_TRAINING_RESULTS.md](MODEL_TRAINING_RESULTS.md)** - Training results and architecture details
 - **[METHODOLOGY.md](METHODOLOGY.md)** - Step-by-step reproducibility guide
-- **[FUTURE_ROADMAP.md](FUTURE_ROADMAP.md)** - Biological data adaptation pathway
 
 ### 📈 Analysis & Results
 - **src/analysis_results/** - Error analysis visualizations and metrics
@@ -40,8 +38,6 @@ organoid_activity/
 ├── README.md                    # This navigation hub
 ├── TECHNICAL_REPORT.md          # Consolidated findings
 ├── METHODOLOGY.md               # Reproducibility guide
-├── FUTURE_ROADMAP.md           # Next steps
-├── MODEL_TRAINING_RESULTS.md   # Training details
 ├── src/                        # Source code
 │   ├── lstm_forecaster.py      # CNN-LSTM model architecture
 │   ├── trainer.py              # Training pipeline
@@ -83,7 +79,36 @@ python -m src.interpretability_viz  # Interpretability visualizations
 
 **Simulated Data**: This project uses controlled Brunel network simulations with 30 Hz firing rates and CV_ISI ~0.41 (more regular than biological neurons). The simplified dynamics enable stable proof-of-concept development while maintaining essential neural network characteristics.
 
-**Limitations**: 100-neuron network scale, regular spiking patterns, and controlled environment. See [FUTURE_ROADMAP.md](FUTURE_ROADMAP.md) for biological data adaptation strategies.
+**Limitations**: 100-neuron network scale, regular spiking patterns, and controlled environment. See "Next Phase" section below for biological data adaptation strategies.
+
+---
+
+## Next Phase: Biological Data Integration
+
+### Multi-Electrode Array (MEA) Adaptation
+**Objective**: Adapt CNN-LSTM for high-density MEA recordings from neural cultures and organoids.
+
+**Key Challenges**:
+- **Noise Handling**: Real MEA data has 10-100x more noise than simulations
+- **Spatial Geometry**: Incorporate actual electrode positions for spatial convolutions
+- **Variable Sampling**: Different MEA systems use 10-40 kHz sampling rates
+
+**Technical Approach**:
+- Adaptive preprocessing with robust artifact detection
+- Spatial-aware CNN respecting electrode geometry
+- Transfer learning from Brunel-trained weights to MEA data
+
+### Calcium Imaging Integration
+**Objective**: Extend to optical neural activity measurements with different temporal dynamics.
+
+**Adaptations**:
+- Handle 30-100 Hz temporal resolution (vs. 10,000 Hz for voltage)
+- Process calcium transients instead of membrane voltage
+- Manage 1000+ neurons vs. 64-256 electrodes
+- Address photon noise, motion artifacts, and bleaching
+
+### Multi-Modal Data Fusion
+**Vision**: Combine MEA electrical recordings with calcium imaging for comprehensive neural activity modeling.
 
 ---
 

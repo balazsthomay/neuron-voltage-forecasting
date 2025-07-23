@@ -373,5 +373,3 @@ output_shape: [batch_size, num_neurons]
 
 - **[README.md](README.md)** - Project navigation hub and quick start
 - **[TECHNICAL_REPORT.md](TECHNICAL_REPORT.md)** - Complete findings consolidation
-- **[FUTURE_ROADMAP.md](FUTURE_ROADMAP.md)** - Biological data adaptation pathway  
-- **[MODEL_TRAINING_RESULTS.md](MODEL_TRAINING_RESULTS.md)** - Detailed training results
