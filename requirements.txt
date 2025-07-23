@@ -1,0 +1,21 @@
+# Core ML and Scientific Computing
+torch>=2.0.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+tqdm>=4.65.0
+
+# Neural Network Simulation
+brian2>=2.5.0
+
+# Data Processing and Persistence
+scikit-learn>=1.3.0
+pickle-mixin>=1.0.2
+
+# Development and Logging
+logging
+pathlib
+typing-extensions>=4.0.0
+dataclasses
+
+# Additional Standard Library (typically included with Python)
+# os, sys, time, copy, hashlib are standard library modules
