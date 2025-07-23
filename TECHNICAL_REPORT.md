@@ -90,11 +90,10 @@ Dense Output: [batch, 100_neurons] voltage predictions
 ### Training Characteristics
 - **Convergence**: Smooth, stable improvement over 129 epochs vs. plateauing at epoch 2 for previous models
 - **Generalization**: Test R² (0.755) matches validation performance with no overfitting
-- **Training Time**: ~8 minutes on Apple Silicon M1/M2
+- **Training Time**: ~55 minutes on Apple Silicon M4 Pro
 - **Memory Usage**: 2.18M parameters, efficient memory footprint
 
 ### Error Analysis Findings
-*Generated from comprehensive Phase 4 analysis*
 
 **Spatial Error Distribution**:
 - Consistent performance across all 100 neurons
@@ -127,7 +126,7 @@ Dense Output: [batch, 100_neurons] voltage predictions
 ## Technical Implementation
 
 ### Apple Silicon Optimization
-- **MPS Backend**: Full GPU acceleration on M1/M2 chips with automatic CPU fallback
+- **MPS Backend**: Full GPU acceleration on M4 Pro chips with automatic CPU fallback
 - **Memory Efficiency**: Optimized tensor operations and batch processing
 - **Device Handling**: Robust cross-platform compatibility
 
@@ -222,14 +221,32 @@ When transitioning to real neural recordings, expect:
 
 ## Conclusion
 
-This work demonstrates significant progress in neural voltage forecasting through innovative CNN-LSTM hybrid architecture achieving **75.5% variance explained** on simulated Brunel network data. Key contributions include:
+This work demonstrates progress in neural voltage forecasting through innovative CNN-LSTM hybrid architecture achieving **75.5% variance explained** on simulated Brunel network data. Key contributions include:
 
-1. **Architectural Innovation**: First successful demonstration of CNN-LSTM combination for neural voltage prediction
+1. **Architectural Innovation**: successful demonstration of CNN-LSTM combination for neural voltage prediction
 2. **Spatial Feature Discovery**: Quantified importance of cross-neuron interactions (35% of predictive power)
 3. **Training Methodology**: Established stable optimization protocol for complex neural sequence models
 4. **Comprehensive Analysis**: Developed complete error analysis and interpretability framework with 10+ visualizations
 
 **Impact**: This proof-of-concept provides a strong foundation for adaptation to biological neural activity prediction, with clear pathways for scaling to real organoid and MEA datasets.
+
+---
+
+## References
+
+### Neural Network Simulation Foundation
+Brunel, N. Dynamics of Sparsely Connected Networks of Excitatory and Inhibitory Spiking Neurons. *J Comput Neurosci* 8, 183–208 (2000). https://doi.org/10.1023/A:1008925309027
+
+### LSTM for Neural Dynamics
+Data-Driven Predictive Modeling of Neuronal Dynamics using Long Short-Term Memory. https://arxiv.org/abs/1908.07428
+
+### CNN-LSTM Hybrid Architecture for Neural Signals
+A Comparison of LSTM and CNN Performance in EEG Motor Imagery with Application to Edge Computing Non-invasive Brain-computer Interface Possibilities. https://dl.acm.org/doi/10.1145/3707292.3707376
+
+Automated recognition of epilepsy from EEG signals using a combining space–time algorithm of CNN-LSTM. *Scientific Reports* 13, 14399 (2023). https://www.nature.com/articles/s41598-023-41537-z
+
+### LSTM Implementation Insights
+Attention Mechanism for LSTM used in a Sequence-to-Sequence Task. https://medium.com/@eugenesh4work/attention-mechanism-for-lstm-used-in-a-sequence-to-sequence-task-be1d54919876
 
 ---
 

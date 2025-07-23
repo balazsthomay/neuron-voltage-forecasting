@@ -6,9 +6,6 @@ This guide provides step-by-step instructions for reproducing the CNN-LSTM volta
 
 ### Prerequisites
 ```bash
-# Activate miniconda environment
-conda activate organoid-env
-
 # Install required packages
 pip install -r requirements.txt
 ```
@@ -25,7 +22,7 @@ pickle>=4.0
 ```
 
 ### Hardware Requirements
-- **Recommended**: Apple Silicon (M1/M2) with MPS support
+- **I used**: Apple Silicon (M4 Pro) with MPS support
 - **Alternative**: CUDA-compatible GPU or CPU fallback
 - **Memory**: 8GB RAM minimum, 16GB recommended
 - **Storage**: 2GB for data and models
@@ -128,7 +125,7 @@ python -m src.train_model
 5. **Monitoring**: Loss, R², RMSE tracked every epoch
 6. **Checkpointing**: Best validation model automatically saved
 
-**Expected Training Time**: 8-10 minutes on Apple Silicon M1/M2
+**Expected Training Time**: 55 minutes on Apple Silicon M4 Pro
 
 ### Step 5: Training Validation
 
@@ -344,7 +341,7 @@ output_shape: [batch_size, num_neurons]
 ## Reproducibility Checklist
 
 **Environment**:
-- [ ] Python 3.8+ with miniconda
+- [ ] Python 3.8+ with conda
 - [ ] All dependencies installed via `pip install -r requirements.txt`
 - [ ] MPS/CUDA device available (optional but recommended)
 
@@ -362,10 +359,6 @@ output_shape: [batch_size, num_neurons]
 - [ ] Error analysis generates expected outputs
 - [ ] Interpretability analysis completes
 - [ ] All visualizations created successfully
-
----
-
-*For questions or issues, refer to training.log for detailed execution information and error debugging.*
 
 ---
 
