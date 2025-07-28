@@ -1,4 +1,4 @@
-# Organoid Voltage Forecasting
+# Neuron Voltage Forecasting
 
 **CNN-LSTM hybrid model achieving R² = 0.755 (48% improvement) for voltage prediction on simulated Brunel network data.** This project demonstrates effective spatial-temporal modeling for neural voltage forecasting using deep learning on 100-neuron simulated datasets.
 
