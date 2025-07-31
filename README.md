@@ -1,6 +1,7 @@
 # Neuron Voltage Forecasting
 
-**CNN-LSTM hybrid model achieving R² = 0.755 (48% improvement) for voltage prediction on simulated Brunel network data.** This project demonstrates effective spatial-temporal modeling for neural voltage forecasting using deep learning on 100-neuron simulated datasets.
+CNN-LSTM hybrid model achieving **R² = 0.755** for voltage prediction on simulated neural networks, demonstrating effective spatial-temporal modeling for neuroscience applications.
+
 
 ## Quick Start
 
@@ -18,18 +19,18 @@ python -m src.interpretability
 
 ## Navigation
 
-### 📊 Core Documentation
+### Core Documentation
 - **[TECHNICAL_REPORT.md](TECHNICAL_REPORT.md)** - Complete findings consolidation
 - **[METHODOLOGY.md](METHODOLOGY.md)** - Step-by-step reproducibility guide
 
-### 📈 Analysis & Results
+### Analysis & Results
 - **src/analysis_results/** - Error analysis visualizations and metrics
 - **src/interpretability_results/** - Model interpretability analysis
 
-### 🔧 Implementation
+### Implementation
 - **src/** - Core source code (models, training, analysis)
 - **models/** - Trained model checkpoints and results
-- **data/** - Simulated Brunel network datasets
+- **data/** - Simulated Brunel network datasets (.py files here too)
 
 ## Project Structure
 
@@ -83,32 +84,11 @@ python -m src.interpretability_viz  # Interpretability visualizations
 
 ---
 
-## Next Phase: Biological Data Integration
+## Future Work
 
-### Multi-Electrode Array (MEA) Adaptation
-**Objective**: Adapt CNN-LSTM for high-density MEA recordings from neural cultures and organoids.
-
-**Key Challenges**:
-- **Noise Handling**: Real MEA data has 10-100x more noise than simulations
-- **Spatial Geometry**: Incorporate actual electrode positions for spatial convolutions
-- **Variable Sampling**: Different MEA systems use 10-40 kHz sampling rates
-
-**Technical Approach**:
-- Adaptive preprocessing with robust artifact detection
-- Spatial-aware CNN respecting electrode geometry
-- Transfer learning from Brunel-trained weights to MEA data
-
-### Calcium Imaging Integration
-**Objective**: Extend to optical neural activity measurements with different temporal dynamics.
-
-**Adaptations**:
-- Handle 30-100 Hz temporal resolution (vs. 10,000 Hz for voltage)
-- Process calcium transients instead of membrane voltage
-- Manage 1000+ neurons vs. 64-256 electrodes
-- Address photon noise, motion artifacts, and bleaching
-
-### Multi-Modal Data Fusion
-**Vision**: Combine MEA electrical recordings with calcium imaging for comprehensive neural activity modeling.
+- **MEA Integration**: Adapt for multi-electrode array recordings
+- **Calcium Imaging**: Extended temporal dynamics for optical measurements  
+- **Multi-Modal Fusion**: Combine electrical and optical neural recordings
 
 ---
 
